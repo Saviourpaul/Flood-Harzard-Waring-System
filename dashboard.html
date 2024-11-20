@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroSystem Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        .sidebar.closed {
+            transform: translateX(-100%);
+        }
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+        .main-content.sidebar-open {
+            margin-left: 16rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar fixed w-64 h-full bg-white shadow-lg closed">
+            <div class="p-4">
+                <h2 class="text-2xl font-bold mb-4">HydroSystem</h2>
+                <nav>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="dashboard">Dashboard</a></li>
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="documentation">Documentation</a></li>
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="statistics">Statistics</a></li>
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="geographic-data">Geographic Data</a></li>
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="team-access">Team Access</a></li>
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="alerts">Alerts</a></li>
+                        <li><a href="#" class="block p-2 rounded hover:bg-gray-200" data-page="settings">Settings</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <button id="sidebar-toggle" class="text-gray-500 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-900">HydroSystem Dashboard</h1>
+                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <!-- Dashboard Content -->
+                <div id="dashboard-page" class="page-content">
+                    <h2 class="text-2xl font-bold mb-4">Dashboard Overview</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <h3 class="text-lg font-medium">Trend Analysis</h3>
+                                <div class="chart-container">
+                                    <canvas id="trendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <h3 class="text-lg font-medium">Monthly Statistics</h3>
+                                <div class="chart-container">
+                                    <canvas id="monthlyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documentation Content -->
+                <div id="documentation-page" class="page-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Documentation</h2>
+                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                HydroSystem User Guide
+                            </h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                                Comprehensive documentation for using the HydroSystem dashboard
+                            </p>
+                        </div>
+                        <div class="border-t border-gray-200">
+                            <dl>
+                                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">
+                                        Getting Started
+                                    </dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        Learn how to create an account, log in, and navigate the dashboard.
+                                    </dd>
+                                </div>
+                                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">
+                                        Understanding Flood Level Data
+                                    </dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        Interpret water level measurements, flow rates, and historical comparisons.
+                                    </dd>
+                                </div>
+                                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">
+                                        Setting Up Alerts
+                                    </dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        Configure custom alerts and notifications for flood risks.
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Content -->
+                <div id="statistics-page" class="page-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Flood Level Statistics</h2>
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <h3 class="text-lg font-medium">Historical Flood Data</h3>
+                            <div class="chart-container">
+                                <canvas id="historicalChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Geographic Data Content -->
+                <div id="geographic-data-page" class="page-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Geographic Data</h2>
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <h3 class="text-lg font-medium">Regional Flood Risk Map</h3>
+                            <div id="map"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Access Content -->
+                <div id="team-access-page" class="page-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Team Access</h2>
+                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                Team Members
+                            </h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                                Manage access and roles for your team
+                            </p>
+                        </div>
+                        <div class="border-t border-gray-200">
+                            <ul id="team-members-list" class="divide-y divide-gray-200"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts Content -->
+                <div id="alerts-page" class="page-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Alerts</h2>
+                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                Recent Alerts
+                            </h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                                View and manage recent flood alerts
+                            </p>
+                        </div>
+                        <div class="border-t border-gray-200">
+                            <ul id="alerts-list" class="divide-y divide-gray-200"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Content -->
+                <div id="settings-page" class="page-content hidden">
+                    <h2 class="text-2xl font-bold mb-4">Settings</h2>
+                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                System Preferences
+                            </h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                                Customize your HydroSystem dashboard
+                            </p>
+                        </div>
+                        <div class="border-t border-gray-200">
+                            <dl>
+                                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">
+                                        Dark Mode
+                                    </dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        <label class="switch">
+                                            <input type="checkbox" id="dark-mode-toggle">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </dd>
+                                </div>
+                                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">
+                                        Notification Frequency
+                                    </dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        <select id="notification-frequency" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                            <option value="hourly">Hourly</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                        </select>
+                                    </dd>
+                                </div>
+                                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt class="text-sm font-medium text-gray-500">
+                                        Data Refresh Rate
+                                    </dt>
+                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        <select id="data-refresh-rate" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                            <option value="5">5 minutes</option>
+                                            <option value="15">15 minutes</option>
+                                            <option value="30">30 minutes</option>
+                                        </select>
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Navigation functionality
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const navLinks = document.querySelectorAll('nav a');
+        const pages = document.querySelectorAll('.page-content');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebar.classList.toggle('closed');
+            mainContent.classList.toggle('sidebar-open');
+        });
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = link.getAttribute('data-page');
+                showPage(pageId);
+            });
+        });
+
+        function showPage(pageId) {
+            pages.forEach(page => {
+                page.classList.add('hidden');
+            });
+            document.getElementById(`${pageId}-page`).classList.remove('hidden');
+        }
+
+        // Logout functionality
+        const logoutBtn = document.getElementById('logout-btn');
+        logoutBtn.addEventListener('click', () => {
+            alert('Logout functionality would be implemented here.');
+        });
+
+        // Chart.js setup
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        const historicalCtx = document.getElementById('historicalChart').getContext('2d');
+
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Trend',
+                    data: [30, 25, 35, 45, 40, 50],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Monthly Data',
+                    data: [30, 25, 35, 45, 40, 50],
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        const historicalChart = new Chart(historicalCtx, {
+            type: 'line',
+            data: {
+                labels: ['2018', '2019', '2020', '2021', '2022', '2023'],
+                datasets: [{
+                    label: 'Historical Flood Levels',
+                    data: [10, 15, 7, 20, 14, 18],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Leaflet.js map setup
+        const map = L.map('map').setView([51.505, -0.09], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        L.marker([51.5, -0.09]).addTo(map)
+            .bindPopup('A sample marker.<br> Customize with real data.')
+            .openPopup();
+
+        // Team members data
+        const teamMembers = [
+            { name: 'John Doe', role: 'Administrator' },
+            { name: 'Jane Smith', role: 'Analyst' },
+            { name: 'Bob Johnson', role: 'Field Agent' }
+        ];
+
+        // Populate team members list
+        const teamMembersList = document.getElementById('team-members-list');
+        teamMembers.forEach(member => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-4 sm:px-6';
+            li.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-indigo-600 truncate">${member.name}</p>
+                    <div class="ml-2 flex-shrink-0 flex">
+                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            ${member.role}
+                        </p>
+                    </div>
+                </div>
+            `;
+            teamMembersList.appendChild(li);
+        });
+
+        // Alerts data
+        const alerts = [
+            { level: 'High', message: 'Severe flooding expected in downtown area' },
+            { level: 'Medium', message: 'Moderate rainfall may cause local flooding' },
+            { level: 'Low', message: 'Minor water level increase in rural streams' }
+        ];
+
+        // Populate alerts list
+        const alertsList = document.getElementById('alerts-list');
+        alerts.forEach(alert => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-4 sm:px-6';
+            li.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900 truncate">${alert.message}</p>
+                    <div class="ml-2 flex-shrink-0 flex">
+                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            alert.level === 'High' ? 'bg-red-100 text-red-800' :
+                            alert.level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                        }">
+                            ${alert.level}
+                        </p>
+                    </div>
+                </div>
+            `;
+            alertsList.appendChild(li);
+        });
+
+        // Settings functionality
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const notificationFrequency = document.getElementById('notification-frequency');
+        const dataRefreshRate = document.getElementById('data-refresh-rate');
+
+        darkModeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark', darkModeToggle.checked);
+        });
+
+        notificationFrequency.addEventListener('change', () => {
+            console.log('Notification frequency set to:', notificationFrequency.value);
+        });
+
+        dataRefreshRate.addEventListener('change', () => {
+            console.log('Data refresh rate set to:', dataRefreshRate.value, 'minutes');
+        });
+    </script>
+</body>
+</html>
